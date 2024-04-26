@@ -10,7 +10,8 @@ import 'package:sqflite/sqflite.dart';
 late Database db;
 
 class ModelDB {
-  int id;
+  //todo check is id can be null
+  int? id;
   String name = "";
   String place = "";
   String description = "";
@@ -26,7 +27,7 @@ class ModelDB {
   String? img10;
 
   ModelDB(
-      {required this.id,
+      {this.id,
       required this.name,
       required this.place,
       required this.description,
@@ -55,11 +56,10 @@ class ModelDB {
 }
 
 class DBHelper {
-  static const _databaseName = "storeDB.db";
-  static const _databaseVersion = 1;
+  static const databaseName = "storeDB.db";
+  static const databaseVersion = 1;
   static const table = "tbl_store";
 
-  static const id = 1;
   static const col1 = "id";
   static const col2 = "name";
   static const col3 = "place";
@@ -77,12 +77,10 @@ class DBHelper {
 
   // this opens the database (and creates it if it doesn't exist)
   Future<Database> get database async {
-    print('creating');
-    String path = join(await getDatabasesPath(), _databaseName);
-    print(path);
-    return await openDatabase(path, version: _databaseVersion,
+    String path = join(await getDatabasesPath(), databaseName);
+    return await openDatabase(path, version: databaseVersion,
         onCreate: (db, version) {
-      //todo implelemnt auto increment maybe
+      //todo implement auto increment maybe
       return db.execute('''CREATE TABLE $table(
     $col1 INTEGER PRIMARY KEY,$col2 TEXT,$col3 TEXT,$col4 TEXT,
     $col5 TEXT,$col6 TEXT,$col7 TEXT,$col8 TEXT,$col9 TEXT,
@@ -105,6 +103,7 @@ class DBHelper {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
+      //todo return operation result
       print('Db Inserted');
     } catch (e) {
       print('DbException $e');
