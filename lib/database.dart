@@ -1,5 +1,3 @@
-
-
 // ignore_for_file: depend_on_referenced_packages
 
 import 'dart:async';
@@ -49,9 +47,60 @@ class ModelDB {
   }
 
   Map<String, dynamic> toMap() {
-    return {'id': id, 'name': name, 'place': place, 'description':description,
-    'img1':img1,'img2':img2,'img3':img3,'img4':img4,'img5':img5,'img6':img6,
-      'img7':img7,'img8':img8,'img9':img9,'img10':img10,};
+    return {
+      'id': id,
+      'name': name,
+      'place': place,
+      'description': description,
+      'img1': img1,
+      'img2': img2,
+      'img3': img3,
+      'img4': img4,
+      'img5': img5,
+      'img6': img6,
+      'img7': img7,
+      'img8': img8,
+      'img9': img9,
+      'img10': img10,
+    };
+  }
+
+  factory ModelDB.fromQuery(Map<String,dynamic>row)=>ModelDB(
+    id: row[DBHelper.col1],
+    name: row[DBHelper.col2],
+    place: row[DBHelper.col3],
+    description: row[DBHelper.col4],
+    img1: row[DBHelper.col5],
+    img2: row[DBHelper.col6],
+    img3: row[DBHelper.col7],
+    img4: row[DBHelper.col8],
+    img5: row[DBHelper.col9],
+    img6: row[DBHelper.col10],
+    img7: row[DBHelper.col11],
+    img8: row[DBHelper.col12],
+    img9: row[DBHelper.col13],
+    img10: row[DBHelper.col14],
+  );
+
+  Future<List<ModelDB>> toModel(List rows) async {
+    return List.generate(10, (index) {
+      return ModelDB(
+        id: rows[index][DBHelper.col1],
+        name: rows[index][DBHelper.col2],
+        place: rows[index][DBHelper.col3],
+        description: rows[index][DBHelper.col4],
+        img1: rows[index][DBHelper.col5],
+        img2: rows[index][DBHelper.col6],
+        img3: rows[index][DBHelper.col7],
+        img4: rows[index][DBHelper.col8],
+        img5: rows[index][DBHelper.col9],
+        img6: rows[index][DBHelper.col10],
+        img7: rows[index][DBHelper.col11],
+        img8: rows[index][DBHelper.col12],
+        img9: rows[index][DBHelper.col13],
+        img10: rows[index][DBHelper.col14],
+      );
+    });
   }
 }
 
@@ -95,7 +144,9 @@ class DBHelper {
   // and the value is the column value. The return value is the id of the
   // inserted row.
 
-  Future insert(ModelDB row, ) async {
+  Future insert(
+    ModelDB row,
+  ) async {
     try {
       await db.insert(
         table,
@@ -104,9 +155,9 @@ class DBHelper {
       );
 
       //todo return operation result
-      print('Db Inserted');
+      return 'Db Inserted';
     } catch (e) {
-      print('DbException $e');
+      return 'DbException $e';
     }
   }
 
@@ -116,8 +167,9 @@ class DBHelper {
     return await db.query(table);
   }
 
-  Future<List<Map<String, dynamic>>> queryFilterRows() async {
-    return await db.rawQuery("select * from $table where stCol2='111'");
+
+  Future<List<Map<String, dynamic>>> queryFilterRow(int id) async {
+    return await db.query(table, where: 'id =?', whereArgs: [id]);
   }
 
   // All of the methods (insert, query, update, delete) can also be done using
@@ -137,7 +189,7 @@ class DBHelper {
 
   // Deletes the row specified by the id. The number of affected rows is
   // returned. This should be 1 as long as the row exists.
-  Future<int> delete(int id, ) async {
-    return await db.delete(DBHelper.table, where: "id =?", whereArgs: [id]);
+  Future<int> delete(int id) async {
+    return await db.delete(table, where: "id =?", whereArgs: [id]);
   }
 }

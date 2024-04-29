@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:store/database.dart';
+import 'package:store/items.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  //connect to database todo
   db = await DBHelper().database;
 
   //manage screen size
@@ -31,6 +31,7 @@ void main() async {
   );
 }
 
+////////////////////////////////////////////////////////////
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -39,6 +40,7 @@ class MyApp extends StatelessWidget {
     return const HomePage();
   }
 }
+////////////////////////////////////////////////////////////
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -46,82 +48,92 @@ class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
+///////////////////////
 
 class _HomePageState extends State<HomePage> {
-  ImagePicker image = ImagePicker();
-  late List<XFile> images;
+  List<ModelDB> rows = [];
 
-  // todo get permission for camera and storage
-  getPermission(){
-
+  getRows() async {
+    var query = await DBHelper().queryAllRows();
+    setState(() {
+      rows = query.map((row) {
+        return ModelDB.fromQuery(row);
+      }).toList();
+    });
   }
 
-  insertDB(ModelDB insert) async {
-    await DBHelper().insert(insert);
-    print(await DBHelper().queryAllRows());
-  }
-
-  pickImages() async {
-    //todo pick and display images
-    images = await image.pickMultiImage();
-    if (images.isNotEmpty) {
-      for (int i = 0; i < images.length; i++) {
-        print(images[i].name);
+  @override
+  initState() {
+    super.initState();
+    Permission.storage.request().then((value) async {
+      await Permission.manageExternalStorage.request();
+      if (value == PermissionStatus.granted) {
+        await Directory('/storage/emulated/0/store').create();
       }
-    }
-  }
+      // await Permission.camera.request();
+    });
 
-  saveImages() async {
-    //todo create a folder and save picked images
-    if (images.isNotEmpty) {
-      for (int i = 0; i < images.length; i++) {
-        images[i].saveTo('/data/user/0/com.example.store/image$i.jpg');
-      }
-    } else {
-      //todo you have not picked any images
-    }
+    getRows();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const SideMenu(),
-      appBar: AppBar(
+      appBar: AppBar(//todo add search bar
         title: const Text('Home'),
       ),
-      body: Column(
-        children: [
-          ElevatedButton(
-              onPressed: () {
-                pickImages();
-              },
-              child: const Text('image picker')),
-          ElevatedButton(
-              onPressed: () {
-                saveImages();
-              },
-              child: const Text('image saver')),
-          ElevatedButton(
-              onPressed: () {
-                //todo make an update function
-                insertDB(ModelDB(
-                  name: 'name',
-                  place: 'place',
-                  description: 'description',
-                   img1: (images.isNotEmpty)? images[0].name:null,
-                   img2: (images.length>1)? images[1].name:null,
-                   img3: (images.length>2)? images[2].name:null,
-                   img4: (images.length>3)? images[3].name:null,
-                   img5: (images.length>4)? images[4].name:null,
-                   img6: (images.length>5)? images[5].name:null,
-                   img7: (images.length>6)? images[6].name:null,
-                   img8: (images.length>7)? images[7].name:null,
-                   img9: (images.length>8)? images[8].name:null,
-                   img10:(images.length>9)? images[9].name:null,
-                ));
-              },
-              child: const Text('db saver')),
-        ],
+      drawer: const SideMenu(),
+      body: SafeArea(
+        child: (rows.isNotEmpty)
+            ? ListView.builder(
+                padding: const EdgeInsets.all(10),
+                itemCount: rows.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          border: Border.all(width: 2),
+                          borderRadius: BorderRadius.circular(10)),
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ItemPage(
+                                id: rows[index].id,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 100,
+                              height: 100,
+                              child: Image.file(File(rows[index].img1!)),
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Text('name: ${rows[index].name}'),
+                                    Text('place: ${rows[index].place}'),
+                                    Text(
+                                        'description: ${rows[index].description}'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              )
+            : const SizedBox(),
       ),
     );
   }
@@ -155,6 +167,28 @@ class SideMenu extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const HomePage(),
+                  ),
+                );
+              },
+              contentPadding: const EdgeInsets.all(5),
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(width: 1),
+                bottom: BorderSide(width: 1),
+              ),
+            ),
+            child: ListTile(
+              selectedColor: Colors.yellow,
+              title: const Text('Create'),
+              leading: const Icon(Icons.create),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ItemPage(),
                   ),
                 );
               },
