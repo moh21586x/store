@@ -1,10 +1,10 @@
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:store/database.dart';
-import 'package:store/main.dart';
 
 ////////////////////////////////////////////////////////////
 class ItemPage extends StatefulWidget {
@@ -35,22 +35,28 @@ class _ItemPageState extends State<ItemPage> {
 
   // get storage permission
   Future<PermissionStatus> getStoragePermission() async {
-    await Permission.storage.request();
+    if (Platform.isAndroid) {
+      var androidInfo = await DeviceInfoPlugin().androidInfo;
+      if (androidInfo.version.sdkInt <= 32) {
+        await Permission.storage.request();
+      } else {
+        await Permission.photos.request();
+      }
+    }
     storage = await Permission.manageExternalStorage.request();
     return storage;
   }
 
   // get camera permission
+  // todo add camera support
   getCameraPermission() async {
     await Permission.camera.request();
   }
 
-  // insert a new row in database
+  // insert a row in database (new/update)
   insertDB(ModelDB insert) async {
     await DBHelper().insert(insert);
   }
-
-  //todo make an update/replace function
 
   // get row by id
   getRow() async {
@@ -97,6 +103,9 @@ class _ItemPageState extends State<ItemPage> {
   // pick images and set them to images
   pickImages() async {
     var img = await image.pickMultiImage(limit: 10);
+    if (img.length > 10) {
+      toast('You can only save 10 images per item');
+    }
     setState(() {
       images = img;
     });
@@ -129,6 +138,7 @@ class _ItemPageState extends State<ItemPage> {
         }
         if (savedImages.isNotEmpty) {
           insertDB(ModelDB(
+            id: row.id,
             name: row.name,
             place: row.place,
             description: row.description,
@@ -143,10 +153,30 @@ class _ItemPageState extends State<ItemPage> {
             img9: (savedImages.length > 8) ? savedImages[8].path : null,
             img10: (savedImages.length > 9) ? savedImages[9].path : null,
           ));
+          toast('Saved successfully');
         }
       } else {
-        //todo you have not picked any images
+        toast('You have not selected any images');
       }
+    }
+  }
+
+  toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        width: MediaQuery.of(context).size.width * .95,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  removeRow() async {
+    int result = await DBHelper().delete(widget.id!);
+    if (result > 0) {
+      toast('Removed successfully');
+    } else {
+      toast('Failed to remove item');
     }
   }
 
@@ -168,7 +198,6 @@ class _ItemPageState extends State<ItemPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const SideMenu(),
       appBar: AppBar(
         title: const Text('Home'),
       ),
@@ -217,14 +246,17 @@ class _ItemPageState extends State<ItemPage> {
               child: const Text('image picker')),
           ElevatedButton(
               onPressed: () async {
-                // for (var i = 0; i <  Permission.values.length; i++) {
-                //   if (await Permission.values[i].status == PermissionStatus.granted) {
-                //     print('\n\n\n\n${Permission.values[i]} : ${await Permission.values[i].status}\n\n\n\n');
-                //   }
-                // }
                 await saveImages();
               },
               child: const Text('save')),
+          ElevatedButton(
+              onPressed: () {
+                removeRow();
+              },
+              child: const Text('delete')),
+          const SizedBox(
+            height: 200,
+          )
         ],
       ),
     );

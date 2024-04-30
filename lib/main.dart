@@ -79,7 +79,33 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(//todo add search bar
+      appBar: AppBar(
+        //todo add search bar
+        // actions: [
+        //   IconButton(
+        //     icon: Icon(Icons.search),
+        //     onPressed: () {
+        //       showDialog(
+        //           context: context,
+        //           builder: (context) {
+        //             return AlertDialog(
+        //               title: Text('Search'),
+        //               content: TextFormField(
+        //                 onChanged: (search) async {
+        //                   var result =
+        //                       await DBHelper().queryFilteredRows(search);
+        //                   setState(() {
+        //                     print(result.map((row) {
+        //                       return ModelDB.fromQuery(row);
+        //                     }).toList());
+        //                   });
+        //                 },
+        //               ),
+        //             );
+        //           });
+        //     },
+        //   )
+        // ],
         title: const Text('Home'),
       ),
       drawer: const SideMenu(),
@@ -109,8 +135,8 @@ class _HomePageState extends State<HomePage> {
                         child: Row(
                           children: [
                             SizedBox(
-                              width: 100,
-                              height: 100,
+                              width: 200,
+                              height: 200,
                               child: Image.file(File(rows[index].img1!)),
                             ),
                             Expanded(

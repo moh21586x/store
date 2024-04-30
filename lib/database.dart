@@ -65,22 +65,22 @@ class ModelDB {
     };
   }
 
-  factory ModelDB.fromQuery(Map<String,dynamic>row)=>ModelDB(
-    id: row[DBHelper.col1],
-    name: row[DBHelper.col2],
-    place: row[DBHelper.col3],
-    description: row[DBHelper.col4],
-    img1: row[DBHelper.col5],
-    img2: row[DBHelper.col6],
-    img3: row[DBHelper.col7],
-    img4: row[DBHelper.col8],
-    img5: row[DBHelper.col9],
-    img6: row[DBHelper.col10],
-    img7: row[DBHelper.col11],
-    img8: row[DBHelper.col12],
-    img9: row[DBHelper.col13],
-    img10: row[DBHelper.col14],
-  );
+  factory ModelDB.fromQuery(Map<String, dynamic> row) => ModelDB(
+        id: row[DBHelper.col1],
+        name: row[DBHelper.col2],
+        place: row[DBHelper.col3],
+        description: row[DBHelper.col4],
+        img1: row[DBHelper.col5],
+        img2: row[DBHelper.col6],
+        img3: row[DBHelper.col7],
+        img4: row[DBHelper.col8],
+        img5: row[DBHelper.col9],
+        img6: row[DBHelper.col10],
+        img7: row[DBHelper.col11],
+        img8: row[DBHelper.col12],
+        img9: row[DBHelper.col13],
+        img10: row[DBHelper.col14],
+      );
 
   Future<List<ModelDB>> toModel(List rows) async {
     return List.generate(10, (index) {
@@ -167,25 +167,14 @@ class DBHelper {
     return await db.query(table);
   }
 
+  Future<List<Map<String, dynamic>>> queryFilteredRows(String search) async {
+    return await db.rawQuery(
+        "SELECT * FROM $table WHERE $col2 like '$search%' or $col3 like '$search%' or $col4 like '$search%' ");
+  }
 
   Future<List<Map<String, dynamic>>> queryFilterRow(int id) async {
     return await db.query(table, where: 'id =?', whereArgs: [id]);
   }
-
-  // All of the methods (insert, query, update, delete) can also be done using
-  // raw SQL commands. This method uses a raw query to give the row count.
-  Future<int?> queryRowCount() async {
-    return Sqflite.firstIntValue(
-        await db.rawQuery('SELECT COUNT(*) FROM $table'));
-  }
-
-  // We are assuming here that the id column in the map is set. The other
-  // column values will be used to update the row.
-  // Future<int> update(Map<String, dynamic> row) async {
-  // Database db = await instance.database;
-  //   int id = row[columnId];
-  //   return await db.update(table, row, where: '$columnId = ?', whereArgs: [id]);
-  // }
 
   // Deletes the row specified by the id. The number of affected rows is
   // returned. This should be 1 as long as the row exists.
