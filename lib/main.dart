@@ -80,35 +80,39 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        //todo add search bar
-        // actions: [
-        //   IconButton(
-        //     icon: Icon(Icons.search),
-        //     onPressed: () {
-        //       showDialog(
-        //           context: context,
-        //           builder: (context) {
-        //             return AlertDialog(
-        //               title: Text('Search'),
-        //               content: TextFormField(
-        //                 onChanged: (search) async {
-        //                   var result =
-        //                       await DBHelper().queryFilteredRows(search);
-        //                   setState(() {
-        //                     print(result.map((row) {
-        //                       return ModelDB.fromQuery(row);
-        //                     }).toList());
-        //                   });
-        //                 },
-        //               ),
-        //             );
-        //           });
-        //     },
-        //   )
-        // ],
+        // todo add search bar
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text('Search'),
+                      content: TextFormField(
+                        onChanged: (search) async {
+                          if (search.isNotEmpty) {
+                            var result =
+                                await DBHelper().queryFilteredRows(search);
+                            setState(() {
+                              rows = result.map((row) {
+                                return ModelDB.fromQuery(row);
+                              }).toList();
+                            });
+                          } else {
+                            getRows();
+                          }
+                        },
+                      ),
+                    );
+                  });
+            },
+          )
+        ],
         title: const Text('Home'),
       ),
-      drawer: const SideMenu(),
+      drawer: sideMenu(context),
       body: SafeArea(
         child: (rows.isNotEmpty)
             ? ListView.builder(
@@ -130,7 +134,9 @@ class _HomePageState extends State<HomePage> {
                                 id: rows[index].id,
                               ),
                             ),
-                          );
+                          ).then((value) => setState(() {
+                                getRows();
+                              }));
                         },
                         child: Row(
                           children: [
@@ -163,11 +169,76 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  Drawer sideMenu(BuildContext context) {
+    return Drawer(
+      child: Column(
+        children: [
+          Container(
+            color: Colors.blue,
+            height: 100,
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(width: 1),
+                bottom: BorderSide(width: 1),
+              ),
+            ),
+            child: ListTile(
+              selectedColor: Colors.yellow,
+              title: const Text('Home'),
+              leading: const Icon(Icons.home),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HomePage(),
+                  ),
+                );
+              },
+              contentPadding: const EdgeInsets.all(5),
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(width: 1),
+                bottom: BorderSide(width: 1),
+              ),
+            ),
+            child: ListTile(
+              selectedColor: Colors.yellow,
+              title: const Text('Create'),
+              leading: const Icon(Icons.create),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ItemPage(),
+                  ),
+                ).then((value) => setState(() {
+                      getRows();
+                    }));
+              },
+              contentPadding: const EdgeInsets.all(5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class SideMenu extends StatelessWidget {
+class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
 
+  @override
+  State<SideMenu> createState() => _SideMenuState();
+}
+
+class _SideMenuState extends State<SideMenu> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -216,7 +287,7 @@ class SideMenu extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => const ItemPage(),
                   ),
-                );
+                ).then((value) => setState(() {}));
               },
               contentPadding: const EdgeInsets.all(5),
             ),

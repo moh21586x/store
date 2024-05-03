@@ -169,7 +169,7 @@ class DBHelper {
 
   Future<List<Map<String, dynamic>>> queryFilteredRows(String search) async {
     return await db.rawQuery(
-        "SELECT * FROM $table WHERE $col2 like '$search%' or $col3 like '$search%' or $col4 like '$search%' ");
+        "SELECT * FROM $table WHERE $col2 like '%$search%' or $col3 like '%$search%' or $col4 like '%$search%' ");
   }
 
   Future<List<Map<String, dynamic>>> queryFilterRow(int id) async {
