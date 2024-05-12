@@ -24,8 +24,6 @@ class _ItemPageState extends State<ItemPage> {
   late PermissionStatus camera;
   late PermissionStatus storage;
   ModelDB row = ModelDB(name: '', place: '', description: '');
-
-  ModelDB model = ModelDB(name: '', place: '', description: '');
   bool create = true;
 
   // create a directory to save images
@@ -54,18 +52,20 @@ class _ItemPageState extends State<ItemPage> {
   }
 
   // insert a row in database (new/update)
-  insertDB(ModelDB insert) async {
-    await DBHelper().insert(insert);
+  Future<int> insertDB(ModelDB insert) async {
+    var result = await DBHelper().insert(insert);
+    int id = result[0]['last_insert_rowid()'];
+    print(id);
+    return id;
   }
 
   // get row by id
-  getRow() async {
-    List rows = await DBHelper().queryFilterRow(widget.id!);
+  getRow(int id) async {
+    List rows = await DBHelper().queryFilterRow(id);
 
     if (rows.isNotEmpty) {
-      row = ModelDB.fromQuery(rows[0]);
-
       setState(() {
+        row = ModelDB.fromQuery(rows[0]);
         if (row.img1 != null) {
           images.add(XFile(row.img1!));
           if (row.img2 != null) {
@@ -97,7 +97,7 @@ class _ItemPageState extends State<ItemPage> {
           }
         }
       });
-    }
+    } else {}
   }
 
   // pick images and set them to images
@@ -137,7 +137,7 @@ class _ItemPageState extends State<ItemPage> {
           }
         }
         if (savedImages.isNotEmpty) {
-          insertDB(ModelDB(
+          var rowId = await insertDB(ModelDB(
             id: row.id,
             name: row.name,
             place: row.place,
@@ -154,6 +154,7 @@ class _ItemPageState extends State<ItemPage> {
             img10: (savedImages.length > 9) ? savedImages[9].path : null,
           ));
           toast('Saved successfully');
+          getRow(rowId);
         }
       } else {
         toast('You have not selected any images');
@@ -171,8 +172,20 @@ class _ItemPageState extends State<ItemPage> {
     );
   }
 
+  //todo err images list gets longer whe deleting and saving repeatedly
   removeRow() async {
-    int result = await DBHelper().delete(widget.id!);
+    for (int i = 0; i < images.length; i++) {
+      List splitPath = images[i].path.split('/');
+      splitPath.removeLast();
+      if (splitPath.last == 'store') {
+        try {
+          File(images[i].path).deleteSync();
+        } on Exception catch (e) {
+          // TODO
+        }
+      }
+    }
+    int result = await DBHelper().delete(row.id!);
     if (result > 0) {
       toast('Removed successfully');
     } else {
@@ -191,7 +204,7 @@ class _ItemPageState extends State<ItemPage> {
     });
 
     if (widget.id != null) {
-      getRow();
+      getRow(widget.id!);
     }
   }
 
@@ -218,28 +231,33 @@ class _ItemPageState extends State<ItemPage> {
                       itemBuilder: (context, index) {
                         return Padding(
                           padding: const EdgeInsets.all(8.0),
+                          //todo make it possible to click on the image to zoom
                           child: Image.file(File(images[index].path)),
                         );
                       }),
                 )
               : const SizedBox(),
           TextFormField(
+            initialValue: row.name,
             decoration: const InputDecoration(labelText: 'name'),
             onChanged: (String value) {
               row.name = value;
             },
           ),
           TextFormField(
+              initialValue: row.place,
               decoration: const InputDecoration(labelText: 'place'),
               onChanged: (String value) {
                 row.place = value;
               }),
           TextFormField(
+              initialValue: row.description,
               decoration: const InputDecoration(labelText: 'description'),
               onChanged: (String value) {
                 row.description = value;
               }),
           ElevatedButton(
+              //todo image picker picks one image only
               onPressed: () {
                 pickImages();
               },
@@ -251,7 +269,9 @@ class _ItemPageState extends State<ItemPage> {
               child: const Text('save')),
           ElevatedButton(
               onPressed: () {
-                removeRow();
+                if (row.id != null) {
+                  removeRow();
+                }
               },
               child: const Text('delete')),
           const SizedBox(

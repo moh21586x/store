@@ -155,7 +155,7 @@ class DBHelper {
       );
 
       //todo return operation result
-      return 'Db Inserted';
+      return db.rawQuery('SELECT last_insert_rowid()');
     } catch (e) {
       return 'DbException $e';
     }
