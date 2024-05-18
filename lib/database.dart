@@ -163,13 +163,19 @@ class DBHelper {
 
   // All of the rows are returned as a list of maps, where each map is
   // a key-value list of columns.
-  Future<List<Map<String, dynamic>>> queryAllRows() async {
-    return await db.query(table);
+  Future<List<Map<String, dynamic>>> queryAllImages() async {
+    return await db.rawQuery("SELECT $col5,$col6,$col7,$col8,$col9,$col10,$col11,$col12,$col13,$col14 FROM $table");
+  }
+
+
+  Future<List<Map<String, dynamic>>> queryAllRowsDisplay() async {
+    return await db.rawQuery("SELECT $col1,$col2,$col3,$col4,$col5 FROM $table");
   }
 
   Future<List<Map<String, dynamic>>> queryFilteredRows(String search) async {
     return await db.rawQuery(
-        "SELECT * FROM $table WHERE $col2 like '%$search%' or $col3 like '%$search%' or $col4 like '%$search%' ");
+        "SELECT $col2,$col3,$col4,$col5 FROM $table WHERE $col2 like '%$search%' or $col3 like '%$search%' or $col4 like '%$search%' ");
+
   }
 
   Future<List<Map<String, dynamic>>> queryFilterRow(int id) async {

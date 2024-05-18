@@ -173,6 +173,7 @@ class _ItemPageState extends State<ItemPage> {
   }
 
   //todo err images list gets longer whe deleting and saving repeatedly
+  //potential fixes remove files from [images] / [Navigator.pop] after saving or deleting
   removeRow() async {
     for (int i = 0; i < images.length; i++) {
       List splitPath = images[i].path.split('/');
@@ -180,17 +181,19 @@ class _ItemPageState extends State<ItemPage> {
       if (splitPath.last == 'store') {
         try {
           File(images[i].path).deleteSync();
-        } on Exception catch (e) {
-          // TODO
+        } catch(e){
+          //do nothing
         }
       }
     }
-    int result = await DBHelper().delete(row.id!);
-    if (result > 0) {
-      toast('Removed successfully');
-    } else {
-      toast('Failed to remove item');
-    }
+    await DBHelper().delete(row.id!).then((int value) {
+      if (value > 0) {
+        toast('Removed successfully');
+        Navigator.of(context).pop();
+      } else {
+        toast('Failed to remove item');
+      }
+    });
   }
 
   @override

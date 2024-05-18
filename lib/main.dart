@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:store/database.dart';
 import 'package:store/items.dart';
 import 'package:window_manager/window_manager.dart';
@@ -53,8 +54,46 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<ModelDB> rows = [];
 
+  deleteUnusedFiles() async {
+    await DBHelper().queryAllImages().then((images) async {
+      List<String?> dbImages = [];
+      List<XFile> deviceImages = [];
+      List<FileSystemEntity> folderContent =
+          Directory("/storage/emulated/0/store").listSync();
+      List<String> imgNo = [
+        "img1",
+        "img2",
+        "img3",
+        "img4",
+        "img5",
+        "img6",
+        "img7",
+        "img8",
+        "img9",
+        "img10"
+      ];
+      for (int i = 0; i < images.length; i++) {
+        for (int img = 0; img < images[i].length; img++) {
+          if (images[i][imgNo[img]] != null) {
+            dbImages.add(images[i][imgNo[img]]);
+          }
+        }
+      }
+      for (int i = 0; i < folderContent.length; i++) {
+        deviceImages.add(XFile(folderContent[i].path));
+      }
+      for (int i = 0; i < deviceImages.length; i++) {
+        if (dbImages.contains(deviceImages[i].path)) {
+        } else {
+          File(deviceImages[i].path).deleteSync();
+          print(deviceImages[i].path);
+        }
+      }
+    });
+  }
+
   getRows() async {
-    var query = await DBHelper().queryAllRows();
+    var query = await DBHelper().queryAllRowsDisplay();
     setState(() {
       rows = query.map((row) {
         return ModelDB.fromQuery(row);
@@ -74,6 +113,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     getRows();
+    deleteUnusedFiles();
   }
 
   @override
