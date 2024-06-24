@@ -4,6 +4,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 import 'package:store/database.dart';
 
 ////////////////////////////////////////////////////////////
@@ -25,6 +26,9 @@ class _ItemPageState extends State<ItemPage> {
   late PermissionStatus storage;
   ModelDB row = ModelDB(name: '', place: '', description: '');
   bool create = true;
+  TextEditingController name = TextEditingController(text: '');
+  TextEditingController place = TextEditingController(text: '');
+  TextEditingController description = TextEditingController(text: '');
 
   // create a directory to save images
   createDirectory() {
@@ -55,7 +59,6 @@ class _ItemPageState extends State<ItemPage> {
   Future<int> insertDB(ModelDB insert) async {
     var result = await DBHelper().insert(insert);
     int id = result[0]['last_insert_rowid()'];
-    print(id);
     return id;
   }
 
@@ -64,8 +67,13 @@ class _ItemPageState extends State<ItemPage> {
     List rows = await DBHelper().queryFilterRow(id);
 
     if (rows.isNotEmpty) {
+      var newRow = ModelDB.fromQuery(rows[0]);
       setState(() {
-        row = ModelDB.fromQuery(rows[0]);
+        row = newRow;
+        name.text = row.name;
+        place.text = row.place;
+        description.text = row.description;
+        images.clear();
         if (row.img1 != null) {
           images.add(XFile(row.img1!));
           if (row.img2 != null) {
@@ -115,13 +123,13 @@ class _ItemPageState extends State<ItemPage> {
   saveImages() async {
     //can create directory
     //another project can create
-    //problem solved, the problem:
-    //problem with DateTime.now().toString().subString(0,18)
+    //problem solved, the problem: problem with DateTime.now().toString().subString(0,18) when saving new file
 
     // try saving in another folder
     if (await Permission.storage.isGranted) {
       if (images.isNotEmpty) {
         createDirectory();
+        savedImages.clear();
         for (int i = 0; i < images.length; i++) {
           var year = DateTime.now().year;
           var month = DateTime.now().month;
@@ -172,8 +180,6 @@ class _ItemPageState extends State<ItemPage> {
     );
   }
 
-  //todo err images list gets longer whe deleting and saving repeatedly
-  //potential fixes remove files from [images] / [Navigator.pop] after saving or deleting
   removeRow() async {
     for (int i = 0; i < images.length; i++) {
       List splitPath = images[i].path.split('/');
@@ -181,7 +187,7 @@ class _ItemPageState extends State<ItemPage> {
       if (splitPath.last == 'store') {
         try {
           File(images[i].path).deleteSync();
-        } catch(e){
+        } catch (e) {
           //do nothing
         }
       }
@@ -223,44 +229,38 @@ class _ItemPageState extends State<ItemPage> {
           (images.isNotEmpty)
               ? Container(
                   decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(width: 1)),
                   constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * .5,
                       maxWidth: MediaQuery.of(context).size.width * .9),
-                  child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: images.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          //todo make it possible to click on the image to zoom
-                          child: Image.file(File(images[index].path)),
-                        );
-                      }),
+                  child: PhotoViewGallery(
+                      pageOptions: <PhotoViewGalleryPageOptions>[
+                        for (var i = 0; i < images.length; i++)
+                          PhotoViewGalleryPageOptions(
+                              imageProvider: FileImage(File(images[i].path)))
+                      ]),
                 )
               : const SizedBox(),
           TextFormField(
-            initialValue: row.name,
+            controller: name,
             decoration: const InputDecoration(labelText: 'name'),
             onChanged: (String value) {
               row.name = value;
             },
           ),
           TextFormField(
-              initialValue: row.place,
+              controller: place,
               decoration: const InputDecoration(labelText: 'place'),
               onChanged: (String value) {
                 row.place = value;
               }),
           TextFormField(
-              initialValue: row.description,
+              controller: description,
               decoration: const InputDecoration(labelText: 'description'),
               onChanged: (String value) {
                 row.description = value;
               }),
           ElevatedButton(
-              //todo image picker picks one image only
               onPressed: () {
                 pickImages();
               },
