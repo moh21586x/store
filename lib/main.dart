@@ -2,27 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:store/database.dart';
 import 'package:store/items.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path/path.dart'as pathPac;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   db = await DBHelper().database;
-
-  //manage screen size
-  if (Platform.isWindows) {
-    await windowManager.ensureInitialized();
-
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(400, 600),
-    );
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
-  }
 
   //start the application
   runApp(
@@ -30,6 +18,12 @@ void main() async {
       home: MyApp(),
     ),
   );
+}
+
+extension FileExtention on FileSystemEntity {
+  String get name {
+    return path.split(Platform.pathSeparator).last;
+  }
 }
 
 ////////////////////////////////////////////////////////////
@@ -53,11 +47,28 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<ModelDB> rows = [];
+  List<String?> dbImages = [];
+  List<XFile> deviceImages = [];
+  String directoryPath="/storage/emulated/0/store";
 
-  deleteUnusedFiles() async {
+  //todo create export function
+  exportDB() async {
+    String dbPath = pathPac.join(await getDatabasesPath(), DBHelper.databaseName);
+    XFile database=XFile(dbPath);
+    database.saveTo(pathPac.join(directoryPath,DBHelper.databaseName));
+    toast("database exported");
+  }
+
+  importDB() async {
+    String dbPath = pathPac.join(await getDatabasesPath(), DBHelper.databaseName);
+    XFile database=XFile(pathPac.join(directoryPath,DBHelper.databaseName));
+    database.saveTo(dbPath);
+    toast("database imported");
+    getRows();
+  }
+
+  getUnusedImages() async {
     await DBHelper().queryAllImages().then((images) async {
-      List<String?> dbImages = [];
-      List<XFile> deviceImages = [];
       List<FileSystemEntity> folderContent =
           Directory("/storage/emulated/0/store").listSync();
       List<String> imgNo = [
@@ -80,16 +91,29 @@ class _HomePageState extends State<HomePage> {
         }
       }
       for (int i = 0; i < folderContent.length; i++) {
-        deviceImages.add(XFile(folderContent[i].path));
-      }
-      for (int i = 0; i < deviceImages.length; i++) {
-        if (dbImages.contains(deviceImages[i].path)) {
+        print(folderContent[i].name);
+        if (folderContent[i].name == DBHelper.databaseName) {
+          continue;
         } else {
-          File(deviceImages[i].path).deleteSync();
-          print(deviceImages[i].path);
+          deviceImages.add(XFile(folderContent[i].path));
         }
       }
+      setState(() {
+        deviceImages.removeWhere((element) => dbImages.contains(element.path));
+      });
     });
+  }
+
+  deleteUnusedImages() {
+    for (int i = 0; i < deviceImages.length; i++) {
+        File(deviceImages[i].path).deleteSync();
+      }
+
+    setState(() {
+      deviceImages = [];
+      dbImages = [];
+    });
+    toast("Unused images deleted");
   }
 
   getRows() async {
@@ -99,6 +123,16 @@ class _HomePageState extends State<HomePage> {
         return ModelDB.fromQuery(row);
       }).toList();
     });
+  }
+
+  toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        width: MediaQuery.of(context).size.width * .95,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -113,14 +147,13 @@ class _HomePageState extends State<HomePage> {
     });
 
     getRows();
-    deleteUnusedFiles();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // todo add search bar
+        // todo add search bar instead of a pop up
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -265,29 +298,6 @@ class _HomePageState extends State<HomePage> {
               contentPadding: const EdgeInsets.all(5),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class SideMenu extends StatefulWidget {
-  const SideMenu({super.key});
-
-  @override
-  State<SideMenu> createState() => _SideMenuState();
-}
-
-class _SideMenuState extends State<SideMenu> {
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          Container(
-            color: Colors.blue,
-            height: 100,
-          ),
           Container(
             decoration: const BoxDecoration(
               border: Border(
@@ -297,15 +307,11 @@ class _SideMenuState extends State<SideMenu> {
             ),
             child: ListTile(
               selectedColor: Colors.yellow,
-              title: const Text('Home'),
-              leading: const Icon(Icons.home),
+              title: const Text('Export database'),
+              leading: const Icon(Icons.create),
               onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomePage(),
-                  ),
-                );
+                Navigator.pop(context);
+                exportDB();
               },
               contentPadding: const EdgeInsets.all(5),
             ),
@@ -319,15 +325,66 @@ class _SideMenuState extends State<SideMenu> {
             ),
             child: ListTile(
               selectedColor: Colors.yellow,
-              title: const Text('Create'),
+              title: const Text('Import database'),
               leading: const Icon(Icons.create),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ItemPage(),
-                  ),
-                ).then((value) => setState(() {}));
+                Navigator.pop(context);
+                importDB();
+              },
+              contentPadding: const EdgeInsets.all(5),
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(width: 1),
+                bottom: BorderSide(width: 1),
+              ),
+            ),
+            child: ListTile(
+              selectedColor: Colors.yellow,
+              title: const Text('get un used images'),
+              leading: const Icon(Icons.create),
+              onTap: () async {
+                getUnusedImages();
+                showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        actions: [
+                          TextButton(
+                              onPressed: () {
+                                deleteUnusedImages();
+                                Navigator.pop(context);
+                                Navigator.pop(context);
+                              },
+                              child: const Text("Delete")),
+                          TextButton(
+                              onPressed: () {
+                                deviceImages = [];
+                                dbImages = [];
+                                Navigator.pop(context);
+                                Navigator.pop(context);
+                              },
+                              child: const Text("cancel"))
+                        ],
+                        title: const Text("Unused images in store folder"),
+                        content: SizedBox(
+                          height: MediaQuery.of(context).size.height * .7,
+                          width: MediaQuery.of(context).size.width * .9,
+                          child: ListView.builder(
+                              itemCount: deviceImages.length,
+                              itemBuilder: (context, index) {
+                                return Row(
+                                  children: [
+                                    SizedBox(height: 100,width: 100,child: Image.file(File(deviceImages[index].path))),
+                                    Text(deviceImages[index].name),
+                                  ],
+                                );
+                              }),
+                        ),
+                      );
+                    });
               },
               contentPadding: const EdgeInsets.all(5),
             ),

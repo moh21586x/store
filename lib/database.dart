@@ -1,7 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages
 
 import 'dart:async';
-
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -129,7 +128,6 @@ class DBHelper {
     String path = join(await getDatabasesPath(), databaseName);
     return await openDatabase(path, version: databaseVersion,
         onCreate: (db, version) {
-      //todo implement auto increment maybe
       return db.execute('''CREATE TABLE $table(
     $col1 INTEGER PRIMARY KEY,$col2 TEXT,$col3 TEXT,$col4 TEXT,
     $col5 TEXT,$col6 TEXT,$col7 TEXT,$col8 TEXT,$col9 TEXT,
