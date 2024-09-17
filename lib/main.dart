@@ -308,7 +308,7 @@ class _HomePageState extends State<HomePage> {
             child: ListTile(
               selectedColor: Colors.yellow,
               title: const Text('Export database'),
-              leading: const Icon(Icons.create),
+              leading: const Icon(Icons.import_export),
               onTap: () {
                 Navigator.pop(context);
                 exportDB();
@@ -326,7 +326,7 @@ class _HomePageState extends State<HomePage> {
             child: ListTile(
               selectedColor: Colors.yellow,
               title: const Text('Import database'),
-              leading: const Icon(Icons.create),
+              leading: const Icon(Icons.important_devices),
               onTap: () {
                 Navigator.pop(context);
                 importDB();
@@ -343,8 +343,8 @@ class _HomePageState extends State<HomePage> {
             ),
             child: ListTile(
               selectedColor: Colors.yellow,
-              title: const Text('get un used images'),
-              leading: const Icon(Icons.create),
+              title: const Text('Get/Delete unused images'),
+              leading: const Icon(Icons.insert_drive_file_sharp),
               onTap: () async {
                 getUnusedImages();
                 showDialog(
