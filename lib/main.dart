@@ -1,12 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:store/database.dart';
 import 'package:store/items.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:path/path.dart'as pathPac;
+import 'package:path/path.dart' as path_pac;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,19 +50,21 @@ class _HomePageState extends State<HomePage> {
   List<ModelDB> rows = [];
   List<String?> dbImages = [];
   List<XFile> deviceImages = [];
-  String directoryPath="/storage/emulated/0/store";
+  String directoryPath = "/storage/emulated/0/store";
 
   //todo create export function
   exportDB() async {
-    String dbPath = pathPac.join(await getDatabasesPath(), DBHelper.databaseName);
-    XFile database=XFile(dbPath);
-    database.saveTo(pathPac.join(directoryPath,DBHelper.databaseName));
+    String dbPath =
+        path_pac.join(await getDatabasesPath(), DBHelper.databaseName);
+    XFile database = XFile(dbPath);
+    database.saveTo(path_pac.join(directoryPath, DBHelper.databaseName));
     toast("database exported");
   }
 
   importDB() async {
-    String dbPath = pathPac.join(await getDatabasesPath(), DBHelper.databaseName);
-    XFile database=XFile(pathPac.join(directoryPath,DBHelper.databaseName));
+    String dbPath =
+        path_pac.join(await getDatabasesPath(), DBHelper.databaseName);
+    XFile database = XFile(path_pac.join(directoryPath, DBHelper.databaseName));
     database.saveTo(dbPath);
     toast("database imported");
     getRows();
@@ -91,7 +94,6 @@ class _HomePageState extends State<HomePage> {
         }
       }
       for (int i = 0; i < folderContent.length; i++) {
-        print(folderContent[i].name);
         if (folderContent[i].name == DBHelper.databaseName) {
           continue;
         } else {
@@ -106,8 +108,8 @@ class _HomePageState extends State<HomePage> {
 
   deleteUnusedImages() {
     for (int i = 0; i < deviceImages.length; i++) {
-        File(deviceImages[i].path).deleteSync();
-      }
+      File(deviceImages[i].path).deleteSync();
+    }
 
     setState(() {
       deviceImages = [];
@@ -154,34 +156,53 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         // todo add search bar instead of a pop up
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: const Text('Search'),
-                      content: TextFormField(
-                        onChanged: (search) async {
-                          if (search.isNotEmpty) {
-                            var result =
-                                await DBHelper().queryFilteredRows(search);
-                            setState(() {
-                              rows = result.map((row) {
-                                return ModelDB.fromQuery(row);
-                              }).toList();
-                            });
-                          } else {
-                            getRows();
-                          }
-                        },
-                      ),
-                    );
-                  });
-            },
-          )
+        actions: [SizedBox(width: MediaQuery.of(context).size.width*.65
+          ,
+          child: TextFormField(decoration: const InputDecoration(suffixIcon: Icon(Icons.search)),onChanged: (search) async {
+            if (search.isNotEmpty) {
+              var result =
+              await DBHelper().queryFilteredRows(search);
+              print(result);
+
+              setState(() {
+                rows = result.map((row) {
+                  return ModelDB.fromQuery(row);
+                }).toList();
+              });
+            } else {
+              getRows();
+            }
+          },),
+        ),
+          // IconButton(
+          //   icon: const Icon(Icons.search),
+          //   onPressed: () {
+          //     showDialog(
+          //         context: context,
+          //         builder: (context) {
+          //           return AlertDialog(
+          //             title: const Text('Search'),
+          //             content: TextFormField(
+          //               onChanged: (search) async {
+          //                 if (search.isNotEmpty) {
+          //                   var result =
+          //                       await DBHelper().queryFilteredRows(search);
+          //                   print(result);
+          //
+          //                   setState(() {
+          //                     rows = result.map((row) {
+          //                       return ModelDB.fromQuery(row);
+          //                     }).toList();
+          //                   });
+          //                 } else {
+          //                   getRows();
+          //                 }
+          //               },
+          //             ),
+          //           );
+          //         });
+          //   },
+          // )
         ],
         title: const Text('Home'),
       ),
@@ -211,25 +232,26 @@ class _HomePageState extends State<HomePage> {
                                 getRows();
                               }));
                         },
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: 200,
-                              height: 200,
-                              child: Image.file(File(rows[index].img1!)),
+                            Image.file(File(rows[index].img1!)),
+                            const SizedBox(
+                              width: 40,
+                              height: 40,
                             ),
-                            Expanded(
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Text('name: ${rows[index].name}'),
-                                    Text('place: ${rows[index].place}'),
-                                    Text(
-                                        'description: ${rows[index].description}'),
-                                  ],
-                                ),
-                              ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text('item: ${rows[index].item}'),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text('location: ${rows[index].location}'),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                  'description: ${rows[index].description}'),
                             ),
                           ],
                         ),
@@ -377,7 +399,11 @@ class _HomePageState extends State<HomePage> {
                               itemBuilder: (context, index) {
                                 return Row(
                                   children: [
-                                    SizedBox(height: 100,width: 100,child: Image.file(File(deviceImages[index].path))),
+                                    SizedBox(
+                                        height: 100,
+                                        width: 100,
+                                        child: Image.file(
+                                            File(deviceImages[index].path))),
                                     Text(deviceImages[index].name),
                                   ],
                                 );

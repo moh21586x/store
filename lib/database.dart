@@ -9,8 +9,8 @@ late Database db;
 class ModelDB {
   //todo check is id can be null
   int? id;
-  String name = "";
-  String place = "";
+  String item = "";
+  String location = "";
   String description = "";
   String? img1;
   String? img2;
@@ -25,8 +25,8 @@ class ModelDB {
 
   ModelDB(
       {this.id,
-      required this.name,
-      required this.place,
+      required this.item,
+      required this.location,
       required this.description,
       this.img1,
       this.img2,
@@ -41,15 +41,15 @@ class ModelDB {
 
   @override
   String toString() {
-    return '''ModelClass{id:$id, name: $name, place: $place, description: $description,
+    return '''ModelClass{id:$id, name/item: $item, place/location: $location, description: $description,
      images(1-10): $img1/$img2/$img3/$img4/$img5/$img6/$img7/$img8/$img9/$img10}''';
   }
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'name': name,
-      'place': place,
+      'name': item,
+      'place': location,
       'description': description,
       'img1': img1,
       'img2': img2,
@@ -66,8 +66,8 @@ class ModelDB {
 
   factory ModelDB.fromQuery(Map<String, dynamic> row) => ModelDB(
         id: row[DBHelper.col1],
-        name: row[DBHelper.col2],
-        place: row[DBHelper.col3],
+        item: row[DBHelper.col2],
+        location: row[DBHelper.col3],
         description: row[DBHelper.col4],
         img1: row[DBHelper.col5],
         img2: row[DBHelper.col6],
@@ -85,8 +85,8 @@ class ModelDB {
     return List.generate(10, (index) {
       return ModelDB(
         id: rows[index][DBHelper.col1],
-        name: rows[index][DBHelper.col2],
-        place: rows[index][DBHelper.col3],
+        item: rows[index][DBHelper.col2],
+        location: rows[index][DBHelper.col3],
         description: rows[index][DBHelper.col4],
         img1: rows[index][DBHelper.col5],
         img2: rows[index][DBHelper.col6],
@@ -172,7 +172,7 @@ class DBHelper {
 
   Future<List<Map<String, dynamic>>> queryFilteredRows(String search) async {
     return await db.rawQuery(
-        "SELECT $col2,$col3,$col4,$col5 FROM $table WHERE $col2 like '%$search%' or $col3 like '%$search%' or $col4 like '%$search%' ");
+        "SELECT $col1, $col2,$col3,$col4,$col5 FROM $table WHERE $col2 like '%$search%' or $col3 like '%$search%' or $col4 like '%$search%' ");
 
   }
 

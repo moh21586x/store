@@ -24,10 +24,10 @@ class _ItemPageState extends State<ItemPage> {
   List<XFile> savedImages = [];
   late PermissionStatus camera;
   late PermissionStatus storage;
-  ModelDB row = ModelDB(name: '', place: '', description: '');
+  ModelDB row = ModelDB(item: '', location: '', description: '');
   bool create = true;
-  TextEditingController name = TextEditingController(text: '');
-  TextEditingController place = TextEditingController(text: '');
+  TextEditingController item = TextEditingController(text: '');
+  TextEditingController location = TextEditingController(text: '');
   TextEditingController description = TextEditingController(text: '');
 
   // create a directory to save images
@@ -70,8 +70,8 @@ class _ItemPageState extends State<ItemPage> {
       var newRow = ModelDB.fromQuery(rows[0]);
       setState(() {
         row = newRow;
-        name.text = row.name;
-        place.text = row.place;
+        item.text = row.item;
+        location.text = row.location;
         description.text = row.description;
         images.clear();
         if (row.img1 != null) {
@@ -138,7 +138,7 @@ class _ItemPageState extends State<ItemPage> {
           var minute = DateTime.now().minute;
           var second = DateTime.now().second;
           var path =
-              '/storage/emulated/0/store/$year-$month-$day-$hour-$minute-$second-${row.name}-$i.jpg';
+              '/storage/emulated/0/store/$year-$month-$day-$hour-$minute-$second-${row.item}-$i.jpg';
           await images[i].saveTo(path);
           if (await File(path).exists()) {
             savedImages.add(XFile(path));
@@ -147,8 +147,8 @@ class _ItemPageState extends State<ItemPage> {
         if (savedImages.isNotEmpty) {
           var rowId = await insertDB(ModelDB(
             id: row.id,
-            name: row.name,
-            place: row.place,
+            item: row.item,
+            location: row.location,
             description: row.description,
             img1: (savedImages.isNotEmpty) ? savedImages[0].path : null,
             img2: (savedImages.length > 1) ? savedImages[1].path : null,
@@ -242,17 +242,17 @@ class _ItemPageState extends State<ItemPage> {
                 )
               : const SizedBox(),
           TextFormField(
-            controller: name,
-            decoration: const InputDecoration(labelText: 'name'),
+            controller: item,
+            decoration: const InputDecoration(labelText: 'item'),
             onChanged: (String value) {
-              row.name = value;
+              row.item = value;
             },
           ),
           TextFormField(
-              controller: place,
-              decoration: const InputDecoration(labelText: 'place'),
+              controller: location,
+              decoration: const InputDecoration(labelText: 'location'),
               onChanged: (String value) {
-                row.place = value;
+                row.location = value;
               }),
           TextFormField(
               controller: description,
