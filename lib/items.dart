@@ -49,11 +49,10 @@ class _ItemPageState extends State<ItemPage> {
     return storage;
   }
 
-  // get camera permission
   // todo add camera support
-  getCameraPermission() async {
-    await Permission.camera.request();
-  }
+  // getCameraPermission() async {
+  //   await Permission.camera.request();
+  // }
 
   // insert a row in database (new/update)
   Future<int> insertDB(ModelDB insert) async {
@@ -137,8 +136,9 @@ class _ItemPageState extends State<ItemPage> {
           var hour = DateTime.now().hour;
           var minute = DateTime.now().minute;
           var second = DateTime.now().second;
+          var extension = images[i].name.toString().split(".").last;
           var path =
-              '/storage/emulated/0/store/$year-$month-$day-$hour-$minute-$second-${row.item}-$i.jpg';
+              '/storage/emulated/0/store/$year-$month-$day-$hour-$minute-$second-${row.item}-$i.$extension';
           await images[i].saveTo(path);
           if (await File(path).exists()) {
             savedImages.add(XFile(path));
@@ -160,8 +160,9 @@ class _ItemPageState extends State<ItemPage> {
             img8: (savedImages.length > 7) ? savedImages[7].path : null,
             img9: (savedImages.length > 8) ? savedImages[8].path : null,
             img10: (savedImages.length > 9) ? savedImages[9].path : null,
-          ));
-          toast('Saved successfully');
+          )).then((value) {
+            toast('Saved successfully');
+          });
           getRow(rowId);
         }
       } else {
@@ -173,7 +174,7 @@ class _ItemPageState extends State<ItemPage> {
   toast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message.toUpperCase()),
         width: MediaQuery.of(context).size.width * .95,
         behavior: SnackBarBehavior.floating,
       ),
@@ -227,36 +228,42 @@ class _ItemPageState extends State<ItemPage> {
         padding: const EdgeInsets.all(20),
         children: [
           (images.isNotEmpty)
-              ? Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(width: 1)),
+              ?
+              //Display media
+              Container(
+                  decoration: BoxDecoration(border: Border.all(width: 1)),
                   constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * .5,
                       maxWidth: MediaQuery.of(context).size.width * .9),
-                  child: PhotoViewGallery(
-                      pageOptions: <PhotoViewGalleryPageOptions>[
-                        for (var i = 0; i < images.length; i++)
-                          PhotoViewGalleryPageOptions(
-                              imageProvider: FileImage(File(images[i].path)))
-                      ]),
+                  child: true
+                      ? PhotoViewGallery(
+                          pageOptions: <PhotoViewGalleryPageOptions>[
+                              for (var i = 0; i < images.length; i++)
+                                PhotoViewGalleryPageOptions(
+                                    imageProvider:
+                                        FileImage(File(images[i].path)))
+                            ])
+                      : PhotoViewGallery.builder(
+                          itemCount: images.length,
+                          builder: ((context, index) {})),
                 )
               : const SizedBox(),
           TextFormField(
             controller: item,
-            decoration: const InputDecoration(labelText: 'item'),
+            decoration: const InputDecoration(labelText: 'ITEM'),
             onChanged: (String value) {
               row.item = value;
             },
           ),
           TextFormField(
               controller: location,
-              decoration: const InputDecoration(labelText: 'location'),
+              decoration: const InputDecoration(labelText: 'LOCATION'),
               onChanged: (String value) {
                 row.location = value;
               }),
           TextFormField(
               controller: description,
-              decoration: const InputDecoration(labelText: 'description'),
+              decoration: const InputDecoration(labelText: 'DESCRIPTION'),
               onChanged: (String value) {
                 row.description = value;
               }),
@@ -264,19 +271,19 @@ class _ItemPageState extends State<ItemPage> {
               onPressed: () {
                 pickImages();
               },
-              child: const Text('image picker')),
+              child: const Text('PICK IMAGES')),
           ElevatedButton(
               onPressed: () async {
                 await saveImages();
               },
-              child: const Text('save')),
+              child: const Text('SAVE')),
           ElevatedButton(
               onPressed: () {
                 if (row.id != null) {
                   removeRow();
                 }
               },
-              child: const Text('delete')),
+              child: const Text('DELETE')),
           const SizedBox(
             height: 200,
           )

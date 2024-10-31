@@ -54,19 +54,44 @@ class _HomePageState extends State<HomePage> {
 
   //todo create export function
   exportDB() async {
+    var now =
+        await File(path_pac.join(directoryPath, "storeDB.db")).lastModified();
     String dbPath =
         path_pac.join(await getDatabasesPath(), DBHelper.databaseName);
     XFile database = XFile(dbPath);
-    database.saveTo(path_pac.join(directoryPath, DBHelper.databaseName));
-    toast("database exported");
+    await database
+        .saveTo(path_pac.join(directoryPath, DBHelper.databaseName))
+        .then((value) async {
+          // check if database is exported correctly
+      var lastModified =
+          await File(path_pac.join(directoryPath, "storeDB.db")).lastModified();
+      if (lastModified.isAfter(now)) {
+        toast("database exported");
+      } else {
+        toast("Failed to export");
+      }
+    });
   }
 
   importDB() async {
+    var now =
+        await File(path_pac.join(directoryPath, "storeDB.db")).lastModified();
     String dbPath =
         path_pac.join(await getDatabasesPath(), DBHelper.databaseName);
     XFile database = XFile(path_pac.join(directoryPath, DBHelper.databaseName));
-    database.saveTo(dbPath);
-    toast("database imported");
+    database.saveTo(dbPath).then((value) async {
+      // check if database is saved correctly
+      var lastModified = await File(
+              path_pac.join(await getDatabasesPath(), DBHelper.databaseName))
+          .lastModified();
+
+      if (lastModified.isAfter(now)) {
+        toast("Database imported");
+      } else {
+        toast("Failed to import database");
+      }
+    });
+
     getRows();
   }
 
@@ -155,54 +180,27 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // todo add search bar instead of a pop up
-        actions: [SizedBox(width: MediaQuery.of(context).size.width*.65
-          ,
-          child: TextFormField(decoration: const InputDecoration(suffixIcon: Icon(Icons.search)),onChanged: (search) async {
-            if (search.isNotEmpty) {
-              var result =
-              await DBHelper().queryFilteredRows(search);
-              print(result);
+        actions: [
+          SizedBox(
+            width: MediaQuery.of(context).size.width * .65,
+            child: TextFormField(
+              decoration: const InputDecoration(suffixIcon: Icon(Icons.search)),
+              onChanged: (search) async {
+                if (search.isNotEmpty) {
+                  var result = await DBHelper().queryFilteredRows(search);
+                  print(result);
 
-              setState(() {
-                rows = result.map((row) {
-                  return ModelDB.fromQuery(row);
-                }).toList();
-              });
-            } else {
-              getRows();
-            }
-          },),
-        ),
-          // IconButton(
-          //   icon: const Icon(Icons.search),
-          //   onPressed: () {
-          //     showDialog(
-          //         context: context,
-          //         builder: (context) {
-          //           return AlertDialog(
-          //             title: const Text('Search'),
-          //             content: TextFormField(
-          //               onChanged: (search) async {
-          //                 if (search.isNotEmpty) {
-          //                   var result =
-          //                       await DBHelper().queryFilteredRows(search);
-          //                   print(result);
-          //
-          //                   setState(() {
-          //                     rows = result.map((row) {
-          //                       return ModelDB.fromQuery(row);
-          //                     }).toList();
-          //                   });
-          //                 } else {
-          //                   getRows();
-          //                 }
-          //               },
-          //             ),
-          //           );
-          //         });
-          //   },
-          // )
+                  setState(() {
+                    rows = result.map((row) {
+                      return ModelDB.fromQuery(row);
+                    }).toList();
+                  });
+                } else {
+                  getRows();
+                }
+              },
+            ),
+          ),
         ],
         title: const Text('Home'),
       ),
@@ -242,16 +240,16 @@ class _HomePageState extends State<HomePage> {
                             ),
                             Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Text('item: ${rows[index].item}'),
+                              child: Text('ITEM: ${rows[index].item}'),
                             ),
                             Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Text('location: ${rows[index].location}'),
+                              child: Text('LOCATION: ${rows[index].location}'),
                             ),
                             Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Text(
-                                  'description: ${rows[index].description}'),
+                                  'DESCRIPTION: ${rows[index].description}'),
                             ),
                           ],
                         ),
@@ -304,7 +302,7 @@ class _HomePageState extends State<HomePage> {
             ),
             child: ListTile(
               selectedColor: Colors.yellow,
-              title: const Text('Create'),
+              title: const Text('New'),
               leading: const Icon(Icons.create),
               onTap: () {
                 Navigator.pop(context);
