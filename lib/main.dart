@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sqflite/sqflite.dart';
@@ -54,23 +53,39 @@ class _HomePageState extends State<HomePage> {
 
   //todo create export function
   exportDB() async {
-    var now =
-        await File(path_pac.join(directoryPath, "storeDB.db")).lastModified();
     String dbPath =
         path_pac.join(await getDatabasesPath(), DBHelper.databaseName);
     XFile database = XFile(dbPath);
-    await database
-        .saveTo(path_pac.join(directoryPath, DBHelper.databaseName))
-        .then((value) async {
-          // check if database is exported correctly
-      var lastModified =
+    // check is database file exist, is yes export and check date differences, else export and check if it exist
+    if (File(path_pac.join(directoryPath, "storeDB.db")).existsSync()) {
+      var now =
           await File(path_pac.join(directoryPath, "storeDB.db")).lastModified();
-      if (lastModified.isAfter(now)) {
-        toast("database exported");
-      } else {
-        toast("Failed to export");
-      }
-    });
+
+      await database
+          .saveTo(path_pac.join(directoryPath, DBHelper.databaseName))
+          .then((value) async {
+        // check if database is exported correctly
+        var lastModified =
+            await File(path_pac.join(directoryPath, "storeDB.db"))
+                .lastModified();
+        if (lastModified.isAfter(now)) {
+          toast("database exported");
+        } else {
+          toast("Failed to export");
+        }
+      });
+    } else {
+      await database
+          .saveTo(path_pac.join(directoryPath, DBHelper.databaseName))
+          .then((value) async {
+        // check if database is exported correctly
+        if (File(path_pac.join(directoryPath, "storeDB.db")).existsSync()) {
+          toast("database exported");
+        } else {
+          toast("Failed to export");
+        }
+      });
+    }
   }
 
   importDB() async {
@@ -95,10 +110,14 @@ class _HomePageState extends State<HomePage> {
     getRows();
   }
 
+  // get unUsed images from "store" folder and save them in [deviceImages]
   getUnusedImages() async {
+    // get all image names/paths
     await DBHelper().queryAllImages().then((images) async {
+      //get all image name in "store" directory
       List<FileSystemEntity> folderContent =
           Directory("/storage/emulated/0/store").listSync();
+      // a list for parsing
       List<String> imgNo = [
         "img1",
         "img2",
@@ -111,23 +130,28 @@ class _HomePageState extends State<HomePage> {
         "img9",
         "img10"
       ];
+      // iterating images in database
       for (int i = 0; i < images.length; i++) {
+        // iterating for the parsing list
         for (int img = 0; img < images[i].length; img++) {
           if (images[i][imgNo[img]] != null) {
+            // add the name/path to list if it exist in database
             dbImages.add(images[i][imgNo[img]]);
           }
         }
       }
+      // iterating images in "store" directory
       for (int i = 0; i < folderContent.length; i++) {
+        // skip database file
         if (folderContent[i].name == DBHelper.databaseName) {
           continue;
         } else {
+          // add all content names in a list
           deviceImages.add(XFile(folderContent[i].path));
         }
       }
-      setState(() {
-        deviceImages.removeWhere((element) => dbImages.contains(element.path));
-      });
+      // remove images that exist in database from the list
+      deviceImages.removeWhere((element) => dbImages.contains(element.path));
     });
   }
 
@@ -140,7 +164,7 @@ class _HomePageState extends State<HomePage> {
       deviceImages = [];
       dbImages = [];
     });
-    toast("Unused images deleted");
+    // toast("Unused images deleted");
   }
 
   getRows() async {
@@ -173,6 +197,8 @@ class _HomePageState extends State<HomePage> {
       // await Permission.camera.request();
     });
 
+    getUnusedImages();
+    deleteUnusedImages();
     getRows();
   }
 
@@ -188,7 +214,6 @@ class _HomePageState extends State<HomePage> {
               onChanged: (search) async {
                 if (search.isNotEmpty) {
                   var result = await DBHelper().queryFilteredRows(search);
-                  print(result);
 
                   setState(() {
                     rows = result.map((row) {
@@ -228,6 +253,8 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ).then((value) => setState(() {
                                 getRows();
+                                getUnusedImages();
+                                deleteUnusedImages();
                               }));
                         },
                         child: Column(
@@ -313,6 +340,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ).then((value) => setState(() {
                       getRows();
+                      getUnusedImages();
+                      deleteUnusedImages();
                     }));
               },
               contentPadding: const EdgeInsets.all(5),
@@ -350,65 +379,6 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pop(context);
                 importDB();
-              },
-              contentPadding: const EdgeInsets.all(5),
-            ),
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(width: 1),
-                bottom: BorderSide(width: 1),
-              ),
-            ),
-            child: ListTile(
-              selectedColor: Colors.yellow,
-              title: const Text('Get/Delete unused images'),
-              leading: const Icon(Icons.insert_drive_file_sharp),
-              onTap: () async {
-                getUnusedImages();
-                showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        actions: [
-                          TextButton(
-                              onPressed: () {
-                                deleteUnusedImages();
-                                Navigator.pop(context);
-                                Navigator.pop(context);
-                              },
-                              child: const Text("Delete")),
-                          TextButton(
-                              onPressed: () {
-                                deviceImages = [];
-                                dbImages = [];
-                                Navigator.pop(context);
-                                Navigator.pop(context);
-                              },
-                              child: const Text("cancel"))
-                        ],
-                        title: const Text("Unused images in store folder"),
-                        content: SizedBox(
-                          height: MediaQuery.of(context).size.height * .7,
-                          width: MediaQuery.of(context).size.width * .9,
-                          child: ListView.builder(
-                              itemCount: deviceImages.length,
-                              itemBuilder: (context, index) {
-                                return Row(
-                                  children: [
-                                    SizedBox(
-                                        height: 100,
-                                        width: 100,
-                                        child: Image.file(
-                                            File(deviceImages[index].path))),
-                                    Text(deviceImages[index].name),
-                                  ],
-                                );
-                              }),
-                        ),
-                      );
-                    });
               },
               contentPadding: const EdgeInsets.all(5),
             ),

@@ -120,11 +120,6 @@ class _ItemPageState extends State<ItemPage> {
 
   // saves picked images to device
   saveImages() async {
-    //can create directory
-    //another project can create
-    //problem solved, the problem: problem with DateTime.now().toString().subString(0,18) when saving new file
-
-    // try saving in another folder
     if (await Permission.storage.isGranted) {
       if (images.isNotEmpty) {
         createDirectory();
@@ -145,7 +140,7 @@ class _ItemPageState extends State<ItemPage> {
           }
         }
         if (savedImages.isNotEmpty) {
-          var rowId = await insertDB(ModelDB(
+          await insertDB(ModelDB(
             id: row.id,
             item: row.item,
             location: row.location,
@@ -161,9 +156,9 @@ class _ItemPageState extends State<ItemPage> {
             img9: (savedImages.length > 8) ? savedImages[8].path : null,
             img10: (savedImages.length > 9) ? savedImages[9].path : null,
           )).then((value) {
+            getRow(value);
             toast('Saved successfully');
           });
-          getRow(rowId);
         }
       } else {
         toast('You have not selected any images');
@@ -280,7 +275,27 @@ class _ItemPageState extends State<ItemPage> {
           ElevatedButton(
               onPressed: () {
                 if (row.id != null) {
-                  removeRow();
+                  showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text(
+                              "Are you sure you want to delete this record?"),
+                          actions: [
+                            TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Cancel")),
+                            TextButton(
+                                onPressed: () {
+                                  removeRow();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Delete"))
+                          ],
+                        );
+                      });
                 }
               },
               child: const Text('DELETE')),
